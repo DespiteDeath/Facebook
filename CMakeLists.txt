@@ -1,0 +1,52 @@
+cmake_minimum_required(VERSION 3.0)
+
+set(CMAKE_CXX_STANDARD 14)
+
+option(BUILD_EXAMPLES "Build examples" OFF)
+option(BUILD_TESTS "Build tests" OFF)
+
+include(cmake/HunterGate.cmake)
+
+HunterGate(
+    URL "https://github.com/DespiteDeath/hunter/archive/v0.19.137.1.tar.gz"
+    SHA1 "f87f234951173424a4436d866252feeb849a9500"
+)
+
+project(client)
+hunter_add_package(Catch)
+find_package(Catch CONFIG REQUIRED)
+
+hunter_add_package(CURL)
+find_package(CURL CONFIG REQUIRED)
+hunter_add_package(OpenSSL)
+find_package(OpenSSL REQUIRED)
+
+
+add_library(client STATIC ${CMAKE_CURRENT_SOURCE_DIR}/sources/client.cpp)
+
+target_include_directories(client PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
+
+if(BUILD_EXAMPLES)
+  file(GLOB EXAMPLE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/examples/*.cpp")
+  foreach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
+    get_filename_component(EXAMPLE_NAME ${EXAMPLE_SOURCE} NAME_WE)
+    add_executable(${EXAMPLE_NAME} ${EXAMPLE_SOURCE})
+    target_link_libraries(${EXAMPLE_NAME} client)
+    install(TARGETS ${EXAMPLE_NAME}
+      RUNTIME DESTINATION bin
+    )
+  endforeach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
+endif()
+
+
+if(BUILD_TESTS)
+enable_testing()
+file(GLOB ${PROJECT_NAME}_TEST_SOURCES tests/*.cpp)
+add_executable(check ${${PROJECT_NAME}_TEST_SOURCES})
+target_link_libraries(check ${PROJECT_NAME} ${DEPENDS_LIBRARIES} Catch::Catch OpenSSL::SSL OpenSSL::Crypto)
+add_test(NAME check COMMAND check "-s" "-r" "compact" "--use-colour" "yes") 
+endif()
