@@ -1,0 +1,5 @@
+language: cpp
+
+script:
+- cmake -H. -B_build -DBUILD_EXAMPLES=ON
+- cmake --build _build
